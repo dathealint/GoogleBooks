@@ -57,14 +57,14 @@ public final class BookService {
 	private BookService() {
 	}
 
-	public void startSearch(final String keyword) {
+	public void startSearch(final String keyword, final int startIndex) {
 
 		// create async task
 		AsyncTask asyncTask = new AsyncTask() {
 			@Override
 			protected Object doInBackground(Object[] objects) {
 
-				String searchURL = createURL(Constants.URL_BOOKS_SEARCH, new Object[]{keyword, "5"});
+				String searchURL = createURL(Constants.URL_BOOKS_SEARCH, new Object[]{keyword, Constants.REQUEST_ITEMS_PER_PAGE, startIndex});
 				Log.v(TAG_NAME, "searchURL: " + searchURL);
 				String jsonResponse = "";
 				try {
@@ -82,12 +82,15 @@ public final class BookService {
 
 				try {
 					JSONObject rootObject = new JSONObject((String) jsonString);
-					JSONArray jsonArray = rootObject.getJSONArray("items");
+					JSONArray jsonArray = rootObject.optJSONArray("items");
 					ArrayList<Book> listBooks = booksFromJSONArray(jsonArray);
+
+					// get total items, for check loadmore purpose
+					int totalItems = rootObject.optInt("totalItems");
 
 					// send result to delegate (listener)
 					if (getBookService().getServiceListener() != null) {
-						getBookService().getServiceListener().onListBooksReceiveid(listBooks);
+						getBookService().getServiceListener().onListBooksReceiveid(listBooks, totalItems);
 					}
 
 				} catch (JSONException e) {

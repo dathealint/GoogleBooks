@@ -10,7 +10,7 @@ import datnguyen.com.googlebooksapp.Model.Book;
 
 public interface BookServiceListener {
 
-	void onListBooksReceiveid(ArrayList<Book> books);
+	void onListBooksReceiveid(ArrayList<Book> books, int totalItems);
 
 	void onErrorReceived(Error error);
 

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import datnguyen.com.googlebooksapp.Model.Book;
 import datnguyen.com.googlebooksapp.Service.BookService;
 import datnguyen.com.googlebooksapp.Service.BookServiceListener;
+import datnguyen.com.googlebooksapp.Service.LoadmoreInterface;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -24,6 +25,9 @@ public class MainActivity extends AppCompatActivity {
 
 	private BookAdapter bookAdapter = null;
 	private ArrayList<Book> listBooks = new ArrayList<>();
+
+	private String currentKeyword = "";
+	private int totalItems = 0;
 
 	BookServiceListener bookServiceListener = null;
 
@@ -36,7 +40,20 @@ public class MainActivity extends AppCompatActivity {
 		searchView = (SearchView) findViewById(R.id.searchView);
 		recycleView = (RecyclerView) findViewById(R.id.recycleView);
 
-		bookAdapter = new BookAdapter(listBooks);
+		LoadmoreInterface loadmoreInterface = new LoadmoreInterface() {
+			@Override
+			public void onLoadmoreBegin() {
+				// search loadmore, result will be added to current list
+				startSearch(currentKeyword, listBooks.size());
+			}
+
+			@Override
+			public void onLoadmoreCompleted() {
+
+			}
+		};
+
+		bookAdapter = new BookAdapter(listBooks, loadmoreInterface);
 
 		RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
 		recycleView.setLayoutManager(mLayoutManager);
@@ -46,7 +63,10 @@ public class MainActivity extends AppCompatActivity {
 		searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 			@Override
 			public boolean onQueryTextSubmit(String s) {
-				startSearch(s);
+				// clear current search result for a fresh search
+				listBooks.clear();
+
+				startSearch(s, 0);
 				searchView.clearFocus();
 				return true;
 			}
@@ -68,12 +88,11 @@ public class MainActivity extends AppCompatActivity {
 		// setup delegate listener
 		bookServiceListener = new BookServiceListener() {
 			@Override
-			public void onListBooksReceiveid(ArrayList<Book> books) {
+			public void onListBooksReceiveid(ArrayList<Book> books, int totalCount) {
 				// add to list and show in recyclerview
 				listBooks.addAll(books);
-
-				//notify changes
-				bookAdapter.notifyItemInserted(listBooks.size());
+				totalItems = totalCount;
+				handleSearchCompleted();
 			}
 
 			@Override
@@ -86,16 +105,32 @@ public class MainActivity extends AppCompatActivity {
 		BookService.getBookService().setServiceListener(bookServiceListener);
 	}
 
+	private void handleSearchCompleted() {
+		if (listBooks.size() < totalItems) {
+			bookAdapter.setFooterEnabled(true);
+		} else {
+			bookAdapter.setFooterEnabled(false);
+		}
+
+		bookAdapter.loadmoreCompleted();
+
+		//notify changes
+		bookAdapter.notifyItemInserted(listBooks.size());
+	}
+
 	/**
 	 * Start searching by sending search query to BookService, and update UI when get result
 	 * @param keyword: keyword to search
 	 */
-	private void startSearch(String keyword) {
+	private void startSearch(String keyword, int startIndex) {
 		keyword = keyword.trim();
-		Log.v("MAIN", "startSearch keyword: " + keyword);
+
+		currentKeyword = keyword;
+
+		Log.v("MAIN", "startSearch keyword: " + keyword + "startIndex: " + startIndex);
 
 		// send keyword search to Service
-		BookService.getBookService().startSearch(keyword);
+		BookService.getBookService().startSearch(keyword, startIndex);
 	}
 
 }

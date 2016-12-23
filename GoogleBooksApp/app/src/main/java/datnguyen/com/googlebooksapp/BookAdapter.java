@@ -1,22 +1,47 @@
 package datnguyen.com.googlebooksapp;
 
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.RecyclerView.ViewHolder;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 
 import datnguyen.com.googlebooksapp.Model.Book;
+import datnguyen.com.googlebooksapp.Service.LoadmoreInterface;
 
 /**
  * Created by datnguyen on 12/22/16.
  */
 
-public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
+public class BookAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+	private final int VIEW_TYPE_ITEM = 1;
+	private final int VIEW_TYPE_PROGRESSBAR = 0;
+	private boolean isFooterEnabled = false;
+
+	private boolean isLoadingmore = false;
+
+	private LoadmoreInterface loadmoreInterface;
+
+	private ArrayList<Book> books;
+	public BookAdapter(ArrayList<Book> books, LoadmoreInterface loadmoreInterface) {
+		this.books = books;
+		this.loadmoreInterface = loadmoreInterface;
+	}
+
+	public void setFooterEnabled(boolean footerEnabled) {
+		isFooterEnabled = footerEnabled;
+	}
+
+	public void loadmoreCompleted() {
+		isLoadingmore = false;
+	}
 
 	// nested class for ViewHolder
 	public static class BookHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -24,7 +49,6 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
 		private ImageView imvThumb = null;
 		private TextView tvTitle = null;
 		private TextView tvAuthor = null;
-
 		private Book book = null;
 
 		public BookHolder(View itemView) {
@@ -53,29 +77,66 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
 		}
 	}
 
-	private ArrayList<Book> books;
+	public static class LoadmoreHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+		private ProgressBar progressBar = null;
+		public LoadmoreHolder(View itemView) {
+			super(itemView);
+			this.progressBar = (ProgressBar) itemView.findViewById(R.id.progressBar);
+		}
 
-	public BookAdapter(ArrayList<Book> books) {
-		this.books = books;
+		public void bindLoadmore(boolean isLoading) {
+			this.progressBar.setIndeterminate(isLoading);
+		}
+
+		@Override
+		public void onClick(View view) {
+			Log.v("BookHolder", "DID CLICK BOOK HOLDER");
+		}
 	}
 
+
 	@Override
-	public BookAdapter.BookHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+	public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 		LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-		View inflatedView = inflater.inflate(R.layout.book_holder_layout, parent, false);
-		return new BookHolder(inflatedView);
+
+		ViewHolder viewHolder;
+		if (viewType == VIEW_TYPE_ITEM) {
+			View inflatedView = inflater.inflate(R.layout.book_holder_layout, parent, false);
+			viewHolder = new BookHolder(inflatedView);
+		} else {
+			View inflatedView = inflater.inflate(R.layout.loadmore_holder_layout, parent, false);
+			viewHolder = new LoadmoreHolder(inflatedView);
+		}
+
+		return viewHolder;
 	}
 
 	@Override
-	public void onBindViewHolder(BookAdapter.BookHolder holder, int position) {
-		Book book = books.get(position);
-		holder.bindBook(book);
+	public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+		if (holder instanceof BookHolder) {
+			Book book = books.get(position);
+			((BookHolder) holder).bindBook(book);
+		} else {
+			((LoadmoreHolder) holder).bindLoadmore(true);
+			if (!isLoadingmore && loadmoreInterface != null && position == books.size()) {
+				loadmoreInterface.onLoadmoreBegin();
+				isLoadingmore = true;
+			}
+		}
 	}
 
 	@Override
 	public int getItemCount() {
 		Log.v("Adapter", "getItemCount: "+ books.size());
-		return books.size();
+
+		return (isFooterEnabled) ? books.size() + 1 : books.size();
 	}
 
+	@Override
+	public int getItemViewType(int position) {
+		if (isFooterEnabled && position >= books.size()) {
+			return VIEW_TYPE_PROGRESSBAR;
+		}
+		return VIEW_TYPE_ITEM;
+	}
 }
