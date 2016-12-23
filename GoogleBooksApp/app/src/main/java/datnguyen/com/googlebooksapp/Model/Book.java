@@ -10,6 +10,8 @@ public class Book {
 	private String title = null;
 	private String author = null;
 	private String thumbUrl = null;
+	private String description = null;
+
 
 	public String getBookId() {
 		return bookId;
@@ -41,5 +43,13 @@ public class Book {
 
 	public void setThumbUrl(String thumbUrl) {
 		this.thumbUrl = thumbUrl;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 }

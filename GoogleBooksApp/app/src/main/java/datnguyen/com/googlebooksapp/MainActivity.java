@@ -9,11 +9,13 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.SearchView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
 import datnguyen.com.googlebooksapp.Model.Book;
 import datnguyen.com.googlebooksapp.Service.BookService;
+import datnguyen.com.googlebooksapp.Service.BookServiceListener;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
 
 	private BookAdapter bookAdapter = null;
 	private ArrayList<Book> listBooks = new ArrayList<>();
+
+	BookServiceListener bookServiceListener = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
 			@Override
 			public boolean onQueryTextSubmit(String s) {
 				startSearch(s);
-
+				searchView.clearFocus();
 				return true;
 			}
 
@@ -52,12 +56,34 @@ public class MainActivity extends AppCompatActivity {
 				return false;
 			}
 		});
+
 		searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
 			@Override
 			public void onFocusChange(View view, boolean b) {
 				Log.v("MAIN", "onFocusChange: " + b);
 			}
 		});
+
+
+		// setup delegate listener
+		bookServiceListener = new BookServiceListener() {
+			@Override
+			public void onListBooksReceiveid(ArrayList<Book> books) {
+				// add to list and show in recyclerview
+				listBooks.addAll(books);
+
+				//notify changes
+				bookAdapter.notifyItemInserted(listBooks.size());
+			}
+
+			@Override
+			public void onErrorReceived(Error error) {
+				//show eror message
+				Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT);
+			}
+		};
+
+		BookService.getBookService().setServiceListener(bookServiceListener);
 	}
 
 	/**
@@ -65,30 +91,11 @@ public class MainActivity extends AppCompatActivity {
 	 * @param keyword: keyword to search
 	 */
 	private void startSearch(String keyword) {
-
 		keyword = keyword.trim();
 		Log.v("MAIN", "startSearch keyword: " + keyword);
 
 		// send keyword search to Service
-		//BookService.getBookService().startSearch(keyword);
-
-		// return value
-
-		// For testing, load first, handle loadmore later
-//		listBooks.clear();
-
-		// test
-		Book book1 = new Book();
-		book1.setTitle("book1");
-		book1.setAuthor("author1");
-		listBooks.add(book1);
-
-		Book book2 = new Book();
-		book2.setTitle("book2");
-		book2.setAuthor("author2");
-		listBooks.add(book2);
-
-		bookAdapter.notifyDataSetChanged();
+		BookService.getBookService().startSearch(keyword);
 	}
 
 }

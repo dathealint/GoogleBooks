@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">GoogleBooksApp</string>
+    <string name="search_hint">Enter some text to search books...</string>
 </resources>
