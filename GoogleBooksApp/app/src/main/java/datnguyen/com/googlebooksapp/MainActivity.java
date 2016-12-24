@@ -1,14 +1,14 @@
 package datnguyen.com.googlebooksapp;
 
-import android.support.v7.app.*;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.SearchView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -17,11 +17,13 @@ import datnguyen.com.googlebooksapp.Model.Book;
 import datnguyen.com.googlebooksapp.Service.BookService;
 import datnguyen.com.googlebooksapp.Service.BookServiceListener;
 import datnguyen.com.googlebooksapp.Service.LoadmoreInterface;
+import datnguyen.com.googlebooksapp.Service.NetworkService;
 
 public class MainActivity extends AppCompatActivity {
 
 	private SearchView searchView = null;
 	private RecyclerView recycleView = null;
+	private TextView tvErrorMessage = null;
 
 	private BookAdapter bookAdapter = null;
 	private ArrayList<Book> listBooks = new ArrayList<>();
@@ -30,15 +32,23 @@ public class MainActivity extends AppCompatActivity {
 	private int totalItems = 0;
 
 	BookServiceListener bookServiceListener = null;
+	private static MainActivity mSharedInstance;
+
+	public static MainActivity getSharedInstance() {
+		return mSharedInstance;
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		mSharedInstance = this;
 		// grab controls
 		searchView = (SearchView) findViewById(R.id.searchView);
 		recycleView = (RecyclerView) findViewById(R.id.recycleView);
+		tvErrorMessage = (TextView) findViewById(R.id.tvErrorMessage);
+		tvErrorMessage.setVisibility(View.GONE);
 
 		LoadmoreInterface loadmoreInterface = new LoadmoreInterface() {
 			@Override
@@ -66,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
 				// clear current search result for a fresh search
 				listBooks.clear();
 
+				// hide error message if showing
+				tvErrorMessage.setText("");
+				bookAdapter.setFooterEnabled(true);
+
 				startSearch(s, 0);
 				searchView.clearFocus();
 				return true;
@@ -92,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
 				// add to list and show in recyclerview
 				listBooks.addAll(books);
 				totalItems = totalCount;
+
 				handleSearchCompleted();
 			}
 
@@ -99,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
 			public void onErrorReceived(Error error) {
 				//show eror message
 				Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT);
+				handleSearchCompleted();
 			}
 		};
 
@@ -106,25 +122,48 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	private void handleSearchCompleted() {
-		if (listBooks.size() < totalItems) {
-			bookAdapter.setFooterEnabled(true);
+		// check network status, show error message if network unavailable
+		if (!NetworkService.getNetworkService(this).isNetworkAvailable()) {
+			// show network error message
+			recycleView.setVisibility(View.GONE);
+			tvErrorMessage.setVisibility(View.VISIBLE);
+
+			tvErrorMessage.setText(getString(R.string.text_network_error));
 		} else {
-			bookAdapter.setFooterEnabled(false);
+			if (totalItems == 0) {
+				// hide result view, show error message
+				recycleView.setVisibility(View.GONE);
+				tvErrorMessage.setVisibility(View.VISIBLE);
+
+				tvErrorMessage.setText(getString(R.string.text_no_result));
+			} else {
+
+				if (listBooks.size() > 0 && listBooks.size() < totalItems) {
+					bookAdapter.setFooterEnabled(true);
+				} else {
+					bookAdapter.setFooterEnabled(false);
+				}
+
+				bookAdapter.loadmoreCompleted();
+
+				//notify changes
+				bookAdapter.notifyItemInserted(listBooks.size());
+
+				recycleView.setVisibility(View.VISIBLE);
+				tvErrorMessage.setVisibility(View.GONE);
+
+			}
+
 		}
-
-		bookAdapter.loadmoreCompleted();
-
-		//notify changes
-		bookAdapter.notifyItemInserted(listBooks.size());
 	}
 
 	/**
 	 * Start searching by sending search query to BookService, and update UI when get result
+	 *
 	 * @param keyword: keyword to search
 	 */
 	private void startSearch(String keyword, int startIndex) {
 		keyword = keyword.trim();
-
 		currentKeyword = keyword;
 
 		Log.v("MAIN", "startSearch keyword: " + keyword + "startIndex: " + startIndex);

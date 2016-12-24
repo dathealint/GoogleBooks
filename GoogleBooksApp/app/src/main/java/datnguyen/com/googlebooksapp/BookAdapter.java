@@ -10,6 +10,9 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+
+import java.net.URL;
 import java.util.ArrayList;
 
 import datnguyen.com.googlebooksapp.Model.Book;
@@ -65,8 +68,12 @@ public class BookAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 			// get imageUrl and use connection to download image
 			String imageUrl = book.getThumbUrl();
-			// TODO: use HTTP Connection to download thumb image
-
+			if (imageUrl != null) {
+				Glide.with(MainActivity.getSharedInstance().getApplicationContext()).load(imageUrl).into(this.imvThumb);
+			} else {
+				 // show default image
+			}
+			
 			this.tvTitle.setText(book.getTitle());
 			this.tvAuthor.setText(book.getAuthor());
 		}

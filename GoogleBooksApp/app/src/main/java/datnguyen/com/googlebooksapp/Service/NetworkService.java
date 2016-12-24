@@ -33,7 +33,7 @@ public class NetworkService {
 	 * Method to check if network is available
 	 * @return true if network is available, otherwise false
 	 */
-	private static Boolean isNetworkAvailable() {
+	public Boolean isNetworkAvailable() {
 		ConnectivityManager connectivityManager
 				= (ConnectivityManager) sharedInstance.mContext.getSystemService (Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();

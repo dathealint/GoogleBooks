@@ -1,6 +1,7 @@
 package datnguyen.com.googlebooksapp.Service;
 
 import android.os.AsyncTask;
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -160,6 +161,10 @@ public final class BookService {
 	private ArrayList<Book> booksFromJSONArray(JSONArray jsonArray) {
 		ArrayList<Book> listBooks = new ArrayList<>();
 
+		if (jsonArray == null) {
+			return listBooks;
+		}
+
 		for (int i = 0; i < jsonArray.length(); i++) {
 			JSONObject jsonBook = jsonArray.optJSONObject(i);
 
@@ -169,8 +174,36 @@ public final class BookService {
 
 			JSONObject volumeInfo = jsonBook.optJSONObject("volumeInfo");
 			newBook.setTitle(volumeInfo.optString("title"));
-			newBook.setAuthor(volumeInfo.optString("authors"));
-			newBook.setDescription(volumeInfo.optString("description"));
+
+			JSONArray listAuthorsJSON = volumeInfo.optJSONArray("authors");
+			if (listAuthorsJSON != null) {
+				ArrayList<String> listAuthors = new ArrayList<>();
+				for (int j = 0; j < listAuthorsJSON.length(); j++) {
+					String author = listAuthorsJSON.optString(j);
+					listAuthors.add(author);
+				}
+
+				String authors = TextUtils.join(", ", listAuthors);
+				newBook.setAuthor(authors);
+			}
+
+			String description = volumeInfo.optString("description");
+			if (description != null) {
+				newBook.setDescription(description);
+			}
+
+			JSONObject listImages = volumeInfo.optJSONObject("imageLinks");
+			if (listImages != null) {
+				String thumb = listImages.optString("thumbnail");
+				if (thumb == null) {
+					thumb = listImages.optString("smallThumbnail");
+				}
+
+				if (thumb != null) {
+					newBook.setThumbUrl(thumb);
+				}
+			}
+
 
 			listBooks.add(newBook);
 
