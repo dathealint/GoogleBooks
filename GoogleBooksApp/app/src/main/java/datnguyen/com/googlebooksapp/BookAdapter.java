@@ -73,7 +73,7 @@ public class BookAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 			} else {
 				 // show default image
 			}
-			
+
 			this.tvTitle.setText(book.getTitle());
 			this.tvAuthor.setText(book.getAuthor());
 		}

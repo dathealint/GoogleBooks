@@ -75,11 +75,15 @@ public class MainActivity extends AppCompatActivity {
 			public boolean onQueryTextSubmit(String s) {
 				// clear current search result for a fresh search
 				listBooks.clear();
+				bookAdapter.notifyDataSetChanged();
 
 				// hide error message if showing
 				tvErrorMessage.setText("");
 				bookAdapter.setFooterEnabled(true);
 
+				recycleView.setVisibility(View.VISIBLE);
+				tvErrorMessage.setVisibility(View.GONE);
+				
 				startSearch(s, 0);
 				searchView.clearFocus();
 				return true;
